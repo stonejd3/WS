@@ -1,0 +1,7 @@
+	Two byte payload implies:
+	BYTE1 BYTE2
+	
+	Test 4-byte payload:
+	Byte 1	Byte 2	Byte3-4	Byte5-6
+	NODE	OUTPUT	SENS1H	SENS1L
+	

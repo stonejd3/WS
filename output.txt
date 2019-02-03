@@ -1,0 +1,23 @@
+FFF -- start device
+F00 -- device name
+FFF -- start output
+F00 -- output
+FFF -- start logic
+F00 -- input name
+0FF -- threshold high
+F00 -- threshold low
+F01 -- input name
+0FF -- threshold high
+F00 -- threshold low
+000 -- stop logic
+000 -- stop output
+000 -- stop device
+
+
+
+cond1 = 0 < temp < 255
+cond2 = 0 < hum  < 255
+
+if (cond1 && cond2 && ... condN){
+	output high;
+}

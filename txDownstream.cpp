@@ -15,10 +15,33 @@ RF24 radio(RPI_V2_GPIO_P1_15, RPI_V2_GPIO_P1_24, BCM2835_SPI_SPEED_8MHZ);
 const uint64_t addresses[2] = { 0xABCDABCD71LL, 0x544d52687CLL };
 
 const uint8_t payloadSize = 7;
-uint8_t data[payloadSize];
+uint8_t rec_data[payloadSize];
+uint8_t o0_s0_data[payloadSize];
+uint8_t o0_s1_data[payloadSize];
+uint8_t o1_s0_data[payloadSize];
+uint8_t o1_s1_data[payloadSize];
+uint8_t tdata[payloadSize];
+uint8_t nullset[payloadSize];
+
 unsigned long startTime, stopTime, counter, rxTimer=0;
 
-void intToBytes (uint8_t * address, uint16_t num){
+void setCommunicationDirection(char c){
+  
+  if(c == 'T'){                                    // Swap to TX Mode:
+    radio.openWritingPipe(addresses[1]);
+    radio.openReadingPipe(1,addresses[0]);
+    radio.stopListening();
+    printf("Role is 'TX'\n");
+  } else {                                         // Swap to RX Mode:
+    radio.openWritingPipe(addresses[0]);
+    radio.openReadingPipe(1,addresses[1]);
+    radio.startListening();
+    printf("Role is 'RX'\n");
+  } // end COMM direction conditional
+  
+} // end setCommunicationDirection()
+
+void intToBytes (uint8_t * bytesAddress, uint16_t num){
     
 	// Default return 0
 	uint8_t byteArray[2] = {0,0};
@@ -33,16 +56,11 @@ void intToBytes (uint8_t * address, uint16_t num){
 	}
 	
 	// Change the values
-	*address = byteArray[0];
-	*(address+1) = byteArray[1];
+	*bytesAddress = byteArray[0];
+	*(bytesAddress+1) = byteArray[1];
 	
 }
 
-/////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-// MAIN METHOD START
-/////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
 int main(int argc, char** argv){
 
   // Print preamble:
@@ -65,58 +83,118 @@ int main(int argc, char** argv){
   radio.stopListening();
 
   /********* Load the buffer with all ones -- start flag ****************/
-  // TODO: PUT REAL DATA HERE!
-  uint8_t node = 0x01;
-  uint8_t output = 0x01;
-  uint16_t sensor1H = 1023;
-  uint16_t sensor1L = 128;
   
-  uint8_t sensor1H_array[2];
-  uint8_t sensor1L_array[2];
+  uint16_t thresh1 = 600;
+  uint16_t thresh2 = 1023;
   
-  uint8_t * s1H_p = sensor1H_array;
-  uint8_t * s1L_p = sensor1L_array;
+  uint8_t thresh1_array[2];
+  uint8_t thresh2_array[2];
   
-  intToBytes(s1H_p, sensor1H);
-  intToBytes(s1L_p, sensor1L);
+  uint8_t * t1_p = thresh1_array;
+  uint8_t * t2_p = thresh2_array;
   
-  // Put all data into packet
-  data[0] = node;
-  data[1] = output;
-  data[2] = 0x01; // sens_id
-  data[3] = sensor1L_array[0]; //s1L_MSB
-  data[4] = sensor1L_array[1]; //s1L_LSB
-  data[5] = sensor1H_array[0]; //s1h_MSB
-  data[6] = sensor1H_array[1]; //s1h_LSB
+  intToBytes(t1_p, thresh1);
+  intToBytes(t2_p, thresh2);
   
-  for(uint8_t i = 0; i < 7; i++){
-	  printf("%d\t", data[i]);
-  }
-  printf("\n");
-  
-  
-  
-  printf("\n");
+  if(1==1){ // Put all data into packets
+    
+    // Node 0, Output 0, Sensor 0
+    o0_s0_data[0] = 0;	 					// node
+    o0_s0_data[1] = 0;						// output
+    o0_s0_data[2] = 0;						// sens_id
+    o0_s0_data[3] = thresh1_array[0];		// s1L_MSB
+    o0_s0_data[4] = thresh1_array[1];		// s1L_LSB
+    o0_s0_data[5] = thresh2_array[0];		// s1H_MSB
+    o0_s0_data[6] = thresh2_array[1];		// s1H_LSB
+        
+    // Node 0, Output 0, Sensor 1
+    o0_s1_data[0] = 0;	 					// node
+    o0_s1_data[1] = 0;						// output
+    o0_s1_data[2] = 1;						// sens_id
+    o0_s1_data[3] = 0;						// s1L_MSB
+    o0_s1_data[4] = 0;						// s1L_LSB
+    o0_s1_data[5] = thresh1_array[0];		// s1H_MSB
+    o0_s1_data[6] = thresh1_array[1];		// s1H_LSB
+        
+    // Node 0, Output 1, Sensor 0
+    o1_s0_data[0] = 0;	 					// node
+    o1_s0_data[1] = 1;						// output
+    o1_s0_data[2] = 0;						// sens_id
+    o1_s0_data[3] = 0;						// s1L_MSB
+    o1_s0_data[4] = 0;						// s1L_LSB
+    o1_s0_data[5] = thresh1_array[0];		// s1H_MSB
+    o1_s0_data[6] = thresh1_array[1];		// s1H_LSB  
+        
+    // Node 0, Output 1, Sensor 1
+    o1_s1_data[0] = 0;	 					// node
+    o1_s1_data[1] = 1;						// output
+    o1_s1_data[2] = 1;						// sens_id
+    o1_s1_data[3] = thresh1_array[0];		// s1L_MSB
+    o1_s1_data[4] = thresh1_array[1];		// s1L_LSB
+    o1_s1_data[5] = thresh2_array[0];		// s1H_MSB
+    o1_s1_data[6] = thresh2_array[1];		// s1H_LSB
+    printf("\n");
 
+    // Node 0, Output 1, Sensor 1
+    tdata[0] = 0;	 					// node
+    tdata[1] = 0xFF;				// output
+    tdata[2] = 1;						// sens_id
+    tdata[3] = thresh1_array[0];		// s1L_MSB
+    tdata[4] = thresh1_array[1];		// s1L_LSB
+    tdata[5] = thresh2_array[0];		// s1H_MSB
+    tdata[6] = thresh2_array[1];		// s1H_LSB
+    
+    // Null payload for testing
+    nullset[0] = 0;
+    nullset[1] = 0;
+    nullset[2] = 0;
+    nullset[3] = 0;
+    nullset[4] = 0;
+    nullset[5] = 0;
+    nullset[6] = 0;
+    
+  }
+ 
+  
   /////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////
   // LOOP CODE STARTS HERE
   /////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////
 
-  // Infinite Loop:
-  while (1){
-      
-	  sleep(2);
-      printf("Initiating Basic Data Transfer\n\r");
-
-      long int cycles = 1;
-      for(int i = 0; i < cycles; i++){
-        radio.writeFast(&data, payloadSize);
-      }
-	  
-	  break;
+  printf("Initiating Basic Data Transfer\n\r");
   
+  // Infinite Loop:
+  bool tried = false;
+  while (1){
+
+    sleep(2); 
+    /*radio.write(&o0_s0_data, payloadSize);
+    sleep(1);
+    radio.write(&o0_s1_data, payloadSize);
+    sleep(1);
+    radio.write(&o1_s0_data, payloadSize);
+    sleep(1);
+    radio.write(&o1_s1_data, payloadSize);
+    sleep(1);*/
+    if(!tried){
+      radio.write(&tdata, payloadSize);
+      sleep(1);
+      setCommunicationDirection('R'); 
+      tried = true;
+    }
+    
+    while(radio.available()){
+      radio.read(&rec_data,payloadSize);
+      for(uint8_t i = 0; i < payloadSize; i++){
+        printf("%d\t",rec_data[i]);
+      }
+      printf("\n");
+      if(rec_data[1] == 0xFF){
+        setCommunicationDirection('T');
+      }
+    }
+
   } // end infinity loop
 
 } // end main

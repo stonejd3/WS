@@ -3,36 +3,128 @@
 
 RF24 radio(7,8);
 
-const uint64_t pipes[2] = { 0xABCDABCD71LL, 0x544d52687CLL };   // Radio pipe addresses for the 2 nodes to communicate.
+const uint64_t pipes[2] = { 0xABCDABCD71LL, 0x544d52687CLL };
 
 // User variables (can change depending on application)
-const uint8_t nodeId = 0x01;
+const uint8_t nodeId = 0x00;
 const uint8_t payloadSize = 7;
 const uint8_t numOutputs = 2;
 const uint8_t numInputs = 2;
 
 // Define a place for all data
 uint8_t data[payloadSize];
+uint8_t * pointerToPayload = data;
 uint16_t outputs[numOutputs][2*numInputs+1];
-uint8_t outputPins[2] = {12,13};
-uint8_t inputs[numInputs] = {0,1};
-uint16_t currentData[numInputs];
+uint8_t outputPins[2] = {4,6};
+uint8_t inputPins[numInputs] = {0,1};
+uint16_t gatheredData[numInputs];
+uint16_t *pointerToGatheredData = gatheredData;
 
+// Function declarations:
 
-uint16_t makeInt(uint8_t high, uint8_t low){
+uint16_t bytesToInt(uint8_t high, uint8_t low){
 	return (uint16_t)(high<<8) + (uint16_t)low;
 }
 
-void getCurrentData(uint16_t * address){
-	
-	for(uint8_t i = 0; i < numInputs; i++){
-		*(address+i) = analogRead(inputs[i]);
-		Serial.print(i);
-		Serial.print(":\t");
-		Serial.println(analogRead(inputs[i]));
+void intToBytes (uint8_t * bytesAddress, uint16_t num){
+    
+	// Default return 0
+	uint8_t byteArray[2] = {0,0};
+	if(num > 0){
+		if(num >= 0 && num <= 255){
+			byteArray[0] = 0x00;
+			byteArray[1] = (uint8_t) num;		
+		} else if(num > 255 && num <=1023){
+			byteArray[0] = (num >> 8);
+			byteArray[1] = num & 0x00FF;
+		}	
 	}
 	
+	// Change the values
+	*bytesAddress = byteArray[0];
+	*(bytesAddress+1) = byteArray[1];
+	
 }
+
+void setCommunicationDirection(char c){
+  
+  if(c == 'T'){                                    // Swap to TX Mode:
+    radio.openWritingPipe(pipes[1]);
+    radio.openReadingPipe(1,pipes[0]);
+    radio.stopListening();
+    Serial.println("Role is 'TX'");
+  } else {                                         // Swap to RX Mode:
+    radio.openWritingPipe(pipes[0]);
+    radio.openReadingPipe(1,pipes[1]);
+    radio.startListening();
+    Serial.println("Role is 'RX'");
+  } // end COMM direction conditional
+  
+} // end setCommunicationDirection()
+
+void gatherData(uint16_t * pointerToGatheredData){
+  
+  for(uint8_t i = 0; i < numInputs; i++)
+    *(pointerToGatheredData+i) = analogRead(inputPins[i]);
+  
+} // end gatherData
+
+void buildPayload(uint8_t * pointerToPayload, uint8_t inputId){
+  
+  // Split input value into two bytes
+  uint8_t bArray[2];
+  uint8_t *pBArray = bArray;
+  intToBytes(pBArray, gatheredData[inputId]);
+  
+  // Populate payload with data
+  *(pointerToPayload+0) = nodeId; 
+  *(pointerToPayload+1) = inputId;
+  *(pointerToPayload+2) = bArray[0];
+  *(pointerToPayload+3) = bArray[1];
+  *(pointerToPayload+4) = 0;
+  *(pointerToPayload+5) = 0;
+  *(pointerToPayload+6) = 0;
+  
+  if(inputId == 255){                   // Build terminating payload
+    *(pointerToPayload+1) = 0xFF;
+  } // end terminating payload conditional
+ 
+} // end buildPayload()
+
+void transmitData(){
+  
+    setCommunicationDirection('T');               // Prepare radio to transmit
+    
+    // Loop through inputData:
+    for(uint8_t i = 0; i <= numInputs; i++){
+      delay(1200);                                 // Delay for accuracy
+      
+      if(i < numInputs){
+        buildPayload(pointerToPayload, i);        // Build standard payload
+      } else {
+        buildPayload(pointerToPayload, 0xFF);     // Build terminating payload
+      }
+      
+      
+      // Debug printout
+      for(uint8_t j = 0; j < 7; j++){
+        Serial.print(data[j], HEX);
+        Serial.print("\t");
+      }
+      Serial.print("\n");
+      
+      if(radio.write(&data, payloadSize)){        // Send the data
+        Serial.println("success");
+      } else {
+        Serial.println("failed");
+      }
+    } // end input loop
+    
+    setCommunicationDirection('R');               // Prepare radio to receive
+    //buildPayload(pointerToPayload, 0);
+    
+  
+} // end transmitData()
 
 void setup(void) {
 
@@ -43,82 +135,97 @@ void setup(void) {
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_1MBPS);
   radio.setPayloadSize(payloadSize);
-  radio.setAutoAck(1);                     // Ensure autoACK is enabled
-  radio.setRetries(2,15);                  // Optionally, increase the delay between retries & # of retries
+  radio.setAutoAck(1);                    // Ensure autoACK is enabled
+  radio.setRetries(2,15);                 // Optionally, increase the delay between retries & # of retries
+  radio.setCRCLength(RF24_CRC_8);         // Use 8-bit CRC for performance
   
-  radio.setCRCLength(RF24_CRC_8);          // Use 8-bit CRC for performance
-  radio.openWritingPipe(pipes[0]);
-  radio.openReadingPipe(1,pipes[1]);
+  setCommunicationDirection('R');
   
-  radio.startListening();                 // Start listening
+  // Do some output pin configurations
+  for(uint8_t i = 0; i < sizeof(outputPins)/sizeof(uint8_t); i++){
+    outputs[i][0] = outputPins[i];        // Put output pins in outputs[]
+    pinMode(outputPins[i], OUTPUT);       // Establish pin modes
+    digitalWrite(outputPins[i],LOW);      // Default to LOW pin state
+  } // end outputPins loop
+  
+  // Print some debug data
   radio.printDetails();                   // Dump the configuration of the rf unit for debugging
-  
-  Serial.println(F("\n\rRF24/examples/Transfer/"));
+  Serial.println(F("\n\rRF24/examples/rxDownstream_NODE/"));
   Serial.println(F("*** fixed to receive mode only"));
  
   radio.powerUp();
   
-  for(uint8_t i = 0; i < sizeof(outputPins)/sizeof(uint8_t); i++){
-	outputs[i][0] = outputPins[i];
-  }
-  
-}
+} // end setup loop
 
 void loop(void){
-  
+  bool test = false;
   // Check incoming messages
   while(radio.available()){       
     radio.read(&data,payloadSize);
-	
-	// Check to make sure this device is the receiver
-	if(data[0] == nodeId){
-		
-		Serial.println("Node is active");
-		
-		// Check if output is in range
-		if(data[1] <= numOutputs && data[1] >= 0){
-			if(data[2] <= numInputs){
-				outputs[data[1]][2*data[2]+1] = makeInt(data[3],data[4]);
-				outputs[data[1]][2*data[2]+2] = makeInt(data[5],data[6]);
-			}
-		}
-	
-	}
-  } // end while(radio.available())
+    if(data[0] == nodeId){                          // See if this device needs to listen
+      Serial.println("Node is active");
+      if(data[1] == 0xFF){                          // Need to TX Data
+        Serial.println("Need to TX Data!");
+        /*test = true;
+        break;*/
+        transmitData();
+     
+      } else {                                      // Need to RX Data
+        if(data[1] <= numOutputs && data[1] >= 0){  // Output Range Check
+          if(data[2] <= numInputs){                 // Input Range Check
+            outputs[data[1]][2*data[2]+1] = bytesToInt(data[3],data[4]);
+            outputs[data[1]][2*data[2]+2] = bytesToInt(data[5],data[6]);
+          } // end input range conditional
+        } // end output range conditional
+      } // end tx/rx conditional 
+    } // end nodeId conditional
+  } // end radio.available() loop
 
-  
-  uint16_t *pointerToCurrentData = currentData;
-  getCurrentData(pointerToCurrentData);
-
-  
-  for(uint8_t i = 0; i < numOutputs; i++){
-	bool flag = true;
-	for(uint8_t j = 0; j < numInputs; j++)
-		if(currentData[j] > outputs[2*j+1] && currentData[j] < outputs[2*j+2])
-		  flag = false;
-	if(flag){
-	  Serial.print("output ");
-	  Serial.print(i);
-	  Serial.println("HIGH");
-	  //digitalWrite(outputs[i][0], HIGH);
-	} else{ 
-	  Serial.print("output ");
-	  Serial.print(i);
-	  Serial.println("LOW");
-	  //digitalWrite(outputs[i][0], LOW);
-	}
-  
+  if(test){
+    
   }
-
-  // For debugging only
+  // Grab the current sensor data
+  gatherData(pointerToGatheredData);
+  
+  // Write to outputs
   for(uint8_t i = 0; i < numOutputs; i++){
-	for(uint8_t j = 0; j < 2*numInputs+1; j++){
-		Serial.print(outputs[i][j]);
-		Serial.print("\t");
-	}
-	Serial.println("");
-  }
+    bool flag = true;                               // Flag used for multiple conditions
+    for(uint8_t j = 0; j < numInputs; j++){
+      if(gatheredData[j] < outputs[i][2*j+1] || gatheredData[j] > outputs[i][2*j+2]){
+        flag = false;                               // Output should not be high
+      } // end input check conditional
+    } // end input loop
+    
+    if(flag){                                       // Output should be HIGH
+      digitalWrite(outputs[i][0], HIGH);
+    } else {                                        // Output should be LOW
+      digitalWrite(outputs[i][0], LOW);
+    } // end flag conditional   
+  } // end output loop
+
+  // Print to console
+  for(uint8_t i = 0; i < 1; i++){
+    Serial.print("IN0:  "); 
+    Serial.println(gatheredData[0]);
+    Serial.print("IN1:  "); 
+    Serial.println(gatheredData[1]);   
+    for(uint8_t i = 0; i < numOutputs; i++){
+      for(uint8_t j = 0; j < 2*numInputs+1; j++){
+        Serial.print(outputs[i][j]);
+        Serial.print("\t");
+      } // end input loop
+      Serial.println("");
+    } // end output loop   
+  } // end print loop
+
   delay(1000);
-  // End debugging
-  
-}
+} // end loop
+
+
+
+
+
+
+
+
+

@@ -18,6 +18,6 @@ endif
 include ../Makefile.inc
 
 # define all programs
-PROGRAMS = gettingstarted gettingstarted_call_response transfer pingpair_dyn txDownstream
+PROGRAMS = txDownstream
 
 include Makefile.examples

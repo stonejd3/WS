@@ -29,13 +29,16 @@
 		// turn output high
 	}
 	
-	data[4]
-	
-	5*8*8 transmissions -- 320 transmission
-	
-	#data transmissions per node
+
+  payload_data_upstream[7]
+  0)[node 0x00][input 0x00][value_MSB][value_LSB][null][null][null]
+  1)[node 0x00][input 0x01][value_MSB][value_LSB][null][null][null]
+  3)[node 0x00][input 0xFF][null]     [null]     [null][null][null]
+  
+	#data transmissions per node (downstream)
 	numOutputs*numInputs
-	data[7]
+	
+  payload_data_downstream[7]
 	0)[node 0x01][output 0x01][sens1_id][s1L_MSB][s1L_LSB][s1H_MSB][s1H_LSB]
 	1)[node 0x01][output 0x01][sens1_id][s2L_MSB][s2L_LSB][s2H_MSB][s2H_LSB]
 	2)[node 0x01][output 0x02][sens2_id][s1L_MSB][s1L_LSB][s1H_MSB][s1H_LSB]

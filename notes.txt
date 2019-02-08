@@ -5,3 +5,53 @@
 	Byte 1	Byte 2	Byte3-4	Byte5-6
 	NODE	OUTPUT	SENS1H	SENS1L
 	
+	payloadSize = 6
+	numInputs = 2;
+	numOutputs = 2;
+	
+	j --> 1 2 3 4
+	d --> 2 4 
+	
+	
+	if(
+	
+	sens1L < current_reading 
+	&& 
+	sens1H > current_reading
+	
+	&&
+	
+	sens2L < current_reading 
+	&& 
+	sens2H > current_reading
+	
+	){
+		// turn output high
+	}
+	
+	data[4]
+	
+	5*8*8 transmissions -- 320 transmission
+	
+	#data transmissions per node
+	numOutputs*numInputs
+	data[7]
+	0)[node 0x01][output 0x01][sens1_id][s1L_MSB][s1L_LSB][s1H_MSB][s1H_LSB]
+	1)[node 0x01][output 0x01][sens1_id][s2L_MSB][s2L_LSB][s2H_MSB][s2H_LSB]
+	2)[node 0x01][output 0x02][sens2_id][s1L_MSB][s1L_LSB][s1H_MSB][s1H_LSB]
+	3)[node 0x01][output 0x02][sens2_id][s2L_MSB][s2L_LSB][s2H_MSB][s2H_LSB]
+	----------------------------------------
+	
+	N:		0	1	2	3	
+	2N+1:	1	3	5	7
+	
+	outputs[num_outputs][2*numInputs+1]
+	0)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	1)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	2)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	3)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	4)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	5)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	6)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	7)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
+	

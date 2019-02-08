@@ -14,7 +14,8 @@ RF24 radio(RPI_V2_GPIO_P1_15, RPI_V2_GPIO_P1_24, BCM2835_SPI_SPEED_8MHZ);
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint64_t addresses[2] = { 0xABCDABCD71LL, 0x544d52687CLL };
 
-uint8_t data[32];
+const uint8_t payloadSize = 7;
+uint8_t data[payloadSize];
 unsigned long startTime, stopTime, counter, rxTimer=0;
 
 void intToBytes (uint8_t * address, uint16_t num){
@@ -50,7 +51,7 @@ int main(int argc, char** argv){
   radio.begin();                           // Setup and configure rf radio
   radio.setChannel(1);
   radio.setPALevel(RF24_PA_MAX);
-  radio.setPayloadSize(6);
+  radio.setPayloadSize(payloadSize);
   radio.setDataRate(RF24_1MBPS);
   radio.setAutoAck(1);                     // Ensure autoACK is enabled
   radio.setRetries(2,15);                  // Optionally, increase the delay between retries & # of retries
@@ -65,8 +66,8 @@ int main(int argc, char** argv){
 
   /********* Load the buffer with all ones -- start flag ****************/
   // TODO: PUT REAL DATA HERE!
-  uint8_t node = 1;
-  uint8_t output = 1;
+  uint8_t node = 0x01;
+  uint8_t output = 0x01;
   uint16_t sensor1H = 1023;
   uint16_t sensor1L = 128;
   
@@ -82,10 +83,17 @@ int main(int argc, char** argv){
   // Put all data into packet
   data[0] = node;
   data[1] = output;
-  data[2] = sensor1H_array[0];
-  data[3] = sensor1H_array[1];
-  data[4] = sensor1L_array[0];
-  data[5] = sensor1L_array[1];
+  data[2] = 0x01; // sens_id
+  data[3] = sensor1L_array[0]; //s1L_MSB
+  data[4] = sensor1L_array[1]; //s1L_LSB
+  data[5] = sensor1H_array[0]; //s1h_MSB
+  data[6] = sensor1H_array[1]; //s1h_LSB
+  
+  for(uint8_t i = 0; i < 7; i++){
+	  printf("%d\t", data[i]);
+  }
+  printf("\n");
+  
   
   
   printf("\n");
@@ -104,7 +112,7 @@ int main(int argc, char** argv){
 
       long int cycles = 1;
       for(int i = 0; i < cycles; i++){
-        radio.writeFast(&data,6);
+        radio.writeFast(&data, payloadSize);
       }
 	  
 	  break;

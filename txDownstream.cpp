@@ -8,13 +8,18 @@
 
 using namespace std;
 
-// Setup for GPIO 15 CE and CE0 CSN with SPI Speed @ 8Mhz
 RF24 radio(RPI_V2_GPIO_P1_15, RPI_V2_GPIO_P1_24, BCM2835_SPI_SPEED_8MHZ);
-
-// Radio pipe addresses for the 2 nodes to communicate.
-const uint64_t addresses[2] = { 0xABCDABCD71LL, 0x544d52687CLL };
+const uint64_t addresses[2] = {  
+  0x7878787878LL, 
+  0xB3B4B5B6F1LL, 
+  0xB3B4B5B6CDLL, 
+  0xB3B4B5B6A3LL, 
+  0xB3B4B5B60FLL, 
+  0xB3B4B5B605LL 
+};
 
 const uint8_t payloadSize = 7;
+
 uint8_t rec_data[payloadSize];
 uint8_t o0_s0_data[payloadSize];
 uint8_t o0_s1_data[payloadSize];
@@ -23,18 +28,29 @@ uint8_t o1_s1_data[payloadSize];
 uint8_t tdata[payloadSize];
 uint8_t nullset[payloadSize];
 
+uint16_t thresh1 = 600;
+uint16_t thresh2 = 1023;
+
+uint8_t thresh1_array[2];
+uint8_t thresh2_array[2];
+
+uint8_t * t1_p = thresh1_array;
+uint8_t * t2_p = thresh2_array;
+
+uint8_t nodeId = 0x00;
+
 unsigned long startTime, stopTime, counter, rxTimer=0;
 
 void setCommunicationDirection(char c){
   
   if(c == 'T'){                                    // Swap to TX Mode:
-    radio.openWritingPipe(addresses[1]);
-    radio.openReadingPipe(1,addresses[0]);
+    radio.openWritingPipe(addresses[0]);
+    radio.openReadingPipe(1,addresses[1]);
     radio.stopListening();
     printf("Role is 'TX'\n");
   } else {                                         // Swap to RX Mode:
-    radio.openWritingPipe(addresses[0]);
-    radio.openReadingPipe(1,addresses[1]);
+    radio.openWritingPipe(addresses[1]);
+    radio.openReadingPipe(1,addresses[0]);
     radio.startListening();
     printf("Role is 'RX'\n");
   } // end COMM direction conditional
@@ -61,11 +77,9 @@ void intToBytes (uint8_t * bytesAddress, uint16_t num){
 	
 }
 
-int main(int argc, char** argv){
-
-  // Print preamble:
-  cout << "RF24/examples/Transfer/\n";
-
+void setup(){
+  
+  cout << "RF24/examples/txDownstream/\n";
   radio.begin();                           // Setup and configure rf radio
   radio.setChannel(1);
   radio.setPALevel(RF24_PA_MAX);
@@ -74,24 +88,7 @@ int main(int argc, char** argv){
   radio.setAutoAck(1);                     // Ensure autoACK is enabled
   radio.setRetries(2,15);                  // Optionally, increase the delay between retries & # of retries
   radio.setCRCLength(RF24_CRC_8);          // Use 8-bit CRC for performance
-  //radio.printDetails();
-
-
-  /******** Role is fixed to PING OUT *********/
-  radio.openWritingPipe(addresses[1]);
-  radio.openReadingPipe(1,addresses[0]);
-  radio.stopListening();
-
-  /********* Load the buffer with all ones -- start flag ****************/
-  
-  uint16_t thresh1 = 600;
-  uint16_t thresh2 = 1023;
-  
-  uint8_t thresh1_array[2];
-  uint8_t thresh2_array[2];
-  
-  uint8_t * t1_p = thresh1_array;
-  uint8_t * t2_p = thresh2_array;
+  setCommunicationDirection('T');
   
   intToBytes(t1_p, thresh1);
   intToBytes(t2_p, thresh2);
@@ -99,7 +96,7 @@ int main(int argc, char** argv){
   if(1==1){ // Put all data into packets
     
     // Node 0, Output 0, Sensor 0
-    o0_s0_data[0] = 0;	 					// node
+    o0_s0_data[0] = 0x03;	 					// node
     o0_s0_data[1] = 0;						// output
     o0_s0_data[2] = 0;						// sens_id
     o0_s0_data[3] = thresh1_array[0];		// s1L_MSB
@@ -108,7 +105,7 @@ int main(int argc, char** argv){
     o0_s0_data[6] = thresh2_array[1];		// s1H_LSB
         
     // Node 0, Output 0, Sensor 1
-    o0_s1_data[0] = 0;	 					// node
+    o0_s1_data[0] = 0x03;	 					// node
     o0_s1_data[1] = 0;						// output
     o0_s1_data[2] = 1;						// sens_id
     o0_s1_data[3] = 0;						// s1L_MSB
@@ -117,7 +114,7 @@ int main(int argc, char** argv){
     o0_s1_data[6] = thresh1_array[1];		// s1H_LSB
         
     // Node 0, Output 1, Sensor 0
-    o1_s0_data[0] = 0;	 					// node
+    o1_s0_data[0] = 0x03;	 					// node
     o1_s0_data[1] = 1;						// output
     o1_s0_data[2] = 0;						// sens_id
     o1_s0_data[3] = 0;						// s1L_MSB
@@ -126,7 +123,7 @@ int main(int argc, char** argv){
     o1_s0_data[6] = thresh1_array[1];		// s1H_LSB  
         
     // Node 0, Output 1, Sensor 1
-    o1_s1_data[0] = 0;	 					// node
+    o1_s1_data[0] = 0x03;	 					// node
     o1_s1_data[1] = 1;						// output
     o1_s1_data[2] = 1;						// sens_id
     o1_s1_data[3] = thresh1_array[0];		// s1L_MSB
@@ -136,7 +133,7 @@ int main(int argc, char** argv){
     printf("\n");
 
     // Node 0, Output 1, Sensor 1
-    tdata[0] = 0;	 					// node
+    tdata[0] = 0x03;				// node
     tdata[1] = 0xFF;				// output
     tdata[2] = 1;						// sens_id
     tdata[3] = thresh1_array[0];		// s1L_MSB
@@ -145,7 +142,7 @@ int main(int argc, char** argv){
     tdata[6] = thresh2_array[1];		// s1H_LSB
     
     // Null payload for testing
-    nullset[0] = 0;
+    nullset[0] = 0x03;
     nullset[1] = 0;
     nullset[2] = 0;
     nullset[3] = 0;
@@ -154,30 +151,29 @@ int main(int argc, char** argv){
     nullset[6] = 0;
     
   }
- 
   
-  /////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////
-  // LOOP CODE STARTS HERE
-  /////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////
+}
+
+int main(){
+  
+  setup();
 
   printf("Initiating Basic Data Transfer\n\r");
   
   // Infinite Loop:
-  bool tried = false;
   while (1){
 
     sleep(2); 
-    /*radio.write(&o0_s0_data, payloadSize);
-    sleep(1);
-    radio.write(&o0_s1_data, payloadSize);
-    sleep(1);
-    radio.write(&o1_s0_data, payloadSize);
-    sleep(1);
-    radio.write(&o1_s1_data, payloadSize);
-    sleep(1);*/
-    if(!tried){
+    
+    for(int i = 0; i < 5; i++){
+      radio.writeFast(&o0_s0_data, payloadSize);
+      radio.writeFast(&o0_s1_data, payloadSize);
+      radio.writeFast(&o1_s0_data, payloadSize);
+      radio.writeFast(&o1_s1_data, payloadSize);  
+    }
+    
+    
+    /*if(!tried){
       radio.write(&tdata, payloadSize);
       sleep(1);
       setCommunicationDirection('R'); 
@@ -193,7 +189,9 @@ int main(int argc, char** argv){
       if(rec_data[1] == 0xFF){
         setCommunicationDirection('T');
       }
-    }
+    }*/
+    
+    break;
 
   } // end infinity loop
 

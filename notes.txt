@@ -1,53 +1,27 @@
-	Two byte payload implies:
-	BYTE1 BYTE2
-	
+  ----------------------------------------
 	Test 4-byte payload:
 	Byte 1	Byte 2	Byte3-4	Byte5-6
 	NODE	OUTPUT	SENS1H	SENS1L
-	
+	----------------------------------------
 	payloadSize = 6
 	numInputs = 2;
 	numOutputs = 2;
-	
-	j --> 1 2 3 4
-	d --> 2 4 
-	
-	
-	if(
-	
-	sens1L < current_reading 
-	&& 
-	sens1H > current_reading
-	
-	&&
-	
-	sens2L < current_reading 
-	&& 
-	sens2H > current_reading
-	
-	){
-		// turn output high
-	}
-	
-
+  ----------------------------------------
   payload_data_upstream[7]
   0)[node 0x00][input 0x00][value_MSB][value_LSB][null][null][null]
   1)[node 0x00][input 0x01][value_MSB][value_LSB][null][null][null]
   3)[node 0x00][input 0xFF][null]     [null]     [null][null][null]
-  
-	#data transmissions per node (downstream)
-	numOutputs*numInputs
-	
+	----------------------------------------
   payload_data_downstream[7]
 	0)[node 0x01][output 0x01][sens1_id][s1L_MSB][s1L_LSB][s1H_MSB][s1H_LSB]
 	1)[node 0x01][output 0x01][sens1_id][s2L_MSB][s2L_LSB][s2H_MSB][s2H_LSB]
 	2)[node 0x01][output 0x02][sens2_id][s1L_MSB][s1L_LSB][s1H_MSB][s1H_LSB]
 	3)[node 0x01][output 0x02][sens2_id][s2L_MSB][s2L_LSB][s2H_MSB][s2H_LSB]
 	----------------------------------------
-	
-	N:		0	1	2	3	
+  output map to data_downstream:
+  N:		0	1	2	3	
 	2N+1:	1	3	5	7
-	
+  ----------------------------------------
 	outputs[num_outputs][2*numInputs+1]
 	0)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
 	1)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
@@ -57,4 +31,111 @@
 	5)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
 	6)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
 	7)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
-	
+	----------------------------------------
+  
+  Pseudocode (NODE.ino)
+  void loop:{
+    listen();
+    if(receive data):{
+      if(unique key received):{
+        stopListening();
+        txSensorData();
+        txUniqueKey();
+        startListening()
+      } else {
+        setOutputThresholds();
+      }
+    }
+  }
+ 
+ ----------------------------------------
+  
+  Pseudocode (REPEATER.ino)
+  void loop: {
+  
+    check base for updates:{
+      write(flag)
+      startListening()
+      for(update received):{
+        queue.add(update);
+      }
+    }
+    
+    write updates to nodes:{
+      for(update in queue):{
+        write(node, update)
+      }
+    }
+    
+    read all node data :{
+      for(node in nodes):{
+        write(unique code to node)
+        listen():{
+          if(receive uniqueKey):{
+            stopListening();
+          } else {
+            queue.add(data);
+          }
+        }
+      }
+    }
+    
+    write all node data to base:{
+      for(update in queue):{
+        write(update)
+      }
+    }
+
+  }
+  
+  ----------------------------------------
+  
+  Pseudocode (BASE.cpp)
+  void loop: {
+    listen for flag:{
+      read file:{
+        parseLines
+      }
+      if(file_empty):{
+        write(null);
+      } else :{
+        for(line in file):{
+          write(line);
+        }
+      }
+    }
+    
+  }
+  
+  ----------------------------------------
+  
+  Pseudocode (Base.py)
+  void loop: {
+    
+    if(webHash != localHash):{
+      retrieveUpdatesFromServer()
+      open file
+      for(update in updates):{
+        writeLine(update)
+      }
+      close file
+    }
+    
+    if(sensorDataFile not empty ):{
+      for(line as update in sensorDataFile):{
+        pushToServer(update);
+      }
+    }
+    
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  

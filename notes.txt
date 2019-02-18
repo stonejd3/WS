@@ -7,6 +7,18 @@
   numInputs = 2;
   numOutputs = 2;
   ----------------------------------------
+  data_file_downstream:
+  0)node1,output0,sens1,low,high
+  1)node1,output0,sens2,low,high
+  2)node1,output1,sens1,low,high
+  3)node1,output1,sens2,low,high
+  4)terminate,null,null,null,null
+  5)node2,output0,sens1,low,high
+  6)node2,output0,sens2,low,high
+  7)node2,output1,sens1,low,high
+  8)node2,output1,sens2,low,high
+  9)terminate,null,null,null,null
+  ----------------------------------------
   payload_data_upstream[7]
   0)[node 0x00][input 0x00][value_MSB][value_LSB][null][null][null]
   1)[node 0x00][input 0x01][value_MSB][value_LSB][null][null][null]
@@ -129,11 +141,17 @@
     
   }
   
-  
-  
-  
-  
-  
+  ---------------------------
+  dataDownstream.txt
+  1,0,0,600,1023
+  1,0,1,0,600
+  1,1,0,0,600
+  1,1,1,600,1023
+  2,0,0,600,1023
+  2,0,1,0,600
+  2,1,0,0,600
+  2,1,1,600,1023
+
   
   
   

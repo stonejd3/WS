@@ -147,7 +147,7 @@ void setup(void) {
   
   // Print some debug data
   radio.printDetails();                   // Dump the configuration of the rf unit for debugging
-  Serial.println(F("\n\rRF24/examples/NODE1/"));
+  Serial.println(F("\n\rRF24/examples/NODE2/"));
  
   radio.powerUp();
   
@@ -159,15 +159,6 @@ void loop(void){
   while(radio.available()){       
     radio.read(&data,payloadSize);
     if(data[0] == nodeId){                          // See if this device needs to listen
-      Serial.println("Node is active");
-      
-      for(int i = 0; i < 7; i++){
-        Serial.print(data[i]);
-        Serial.print("\t");
-      }
-      Serial.println("");
-      
-      
       if(data[1] == 0xFF){                          // Need to TX Data
         Serial.println("Need to TX Data!");
         transmitData();
@@ -202,7 +193,7 @@ void loop(void){
   } // end output loop
   
   // Print to console
-  /*for(uint8_t i = 0; i < 1; i++){
+  for(uint8_t i = 0; i < 1; i++){
     Serial.print("IN0:  "); 
     Serial.println(gatheredData[0]);
     Serial.print("IN1:  "); 
@@ -214,7 +205,8 @@ void loop(void){
       } // end input loop
       Serial.println("");
     } // end output loop   
-  } // end print loop*/
+  } // end print loop
+  delay(500);
 } // end loop
 
 

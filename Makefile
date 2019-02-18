@@ -18,6 +18,6 @@ endif
 include ../Makefile.inc
 
 # define all programs
-PROGRAMS = txDownstream
+PROGRAMS = BASE testNode0x01
 
 include Makefile.examples

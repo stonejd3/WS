@@ -127,7 +127,7 @@ void setup(void) {
   Serial.begin(115200);
 
   radio.begin();
-  radio.setChannel(1);
+  radio.setChannel(100);
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_1MBPS);
   radio.setPayloadSize(payloadSize);
@@ -206,7 +206,6 @@ void loop(void){
       Serial.println("");
     } // end output loop   
   } // end print loop
-  delay(500);
 } // end loop
 
 

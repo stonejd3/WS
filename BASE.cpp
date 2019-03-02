@@ -237,7 +237,7 @@ void setup(){
   
   cout << "RF24/examples/BASE/\n";
   radio.begin();                           // Setup and configure rf radio
-  radio.setChannel(1);
+  radio.setChannel(100);
   radio.setPALevel(RF24_PA_MAX);
   radio.setPayloadSize(payloadSize);
   radio.setDataRate(RF24_1MBPS);
@@ -261,6 +261,9 @@ int main(){
       if(data[0] == 0xFF){
         printf("Need to TX\n");
         if(transmitData()){
+          setCommunicationDirection('R');
+        } else {
+          printf("Failed to transmit data packets");
           setCommunicationDirection('R');
         }
       } else {

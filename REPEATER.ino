@@ -7,7 +7,7 @@ const uint64_t rxAddressList[] = {0x7878787878LL, 0xB3B4B5B6F1LL, 0xB3B4B5B6CDLL
 const uint64_t txAddressList[] = {0xB3B4B5B6A3LL, 0xB3B4B5B60FLL, 0xB3B4B5B605LL};
 
 // User variables (can change depending on application)
-const uint8_t nodeId = 0x03;
+//const uint8_t nodeId = 0x03;
 const uint8_t payloadSize = 7;
 const uint8_t numNodes = 3;
 const uint8_t queueLength = 100;
@@ -44,7 +44,7 @@ void queueAdd(uint8_t * pointer){
 }
 
 bool getQueueData(uint8_t index){
-  if(index < queueIndex){
+  if(index < queueIndex-1){
     for(uint8_t i = 0; i < payloadSize; i++){
       data[i] = queue[index][i];
     }
@@ -56,20 +56,24 @@ bool getQueueData(uint8_t index){
 }
 
 void printQueueData(){
-  for(uint8_t i = 0; i < 100; i++){
+  for(uint8_t i = 0; i < queueIndex; i++){
+    Serial.print("Queue index:");
+    Serial.print(i);
+    Serial.print("\t\n");
     for(uint8_t j = 0; j < payloadSize; j++){
-      printf("%d\t",queue[i][j]);
+      Serial.print(queue[i][j]);
+      Serial.print("\t");
     }
-    printf("\n");
+    Serial.println("");
   }
 }
 
 void sendTo(uint8_t node){
-  radio.stopListening();
   radio.openWritingPipe(txAddressList[node]);
-  delay(1000);
   Serial.print("TX to ");
   Serial.println(node);
+  //delay(1000);
+  
 }
 
 bool checkForUpdates(){
@@ -83,7 +87,7 @@ bool checkForUpdates(){
 }
 
 bool transmitDataToNodes(){
-  
+  radio.stopListening();
   uint8_t counter = 0;
   while(getQueueData(counter)){
     sendTo(data[0]);
@@ -92,8 +96,8 @@ bool transmitDataToNodes(){
       for(uint8_t i = 0; i < payloadSize; i++){
         printf("%d\t", data[i]);
       }
-      counter--;
-      printf("\n\n");
+      //counter--;
+      //printf("\n\n");
     }
     counter++;
   }
@@ -107,7 +111,7 @@ void setup(void) {
   Serial.begin(115200);
   radio.begin();
   
-  radio.setChannel(1);
+  radio.setChannel(100);
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_1MBPS);
   radio.setPayloadSize(payloadSize);
@@ -130,28 +134,58 @@ void setup(void) {
   
 } // end setup loop
 
-
+bool f0 = true;
+bool f1 = true;
+bool f2 = false;
+bool f3 = false;
+bool f4 = false;
 
 void loop(void){
-  long currentTime = millis();
   
-  if((startTime + timeIncrement) < currentTime){
+  if(f1 && f0){
     
+    radio.stopListening();
+    Serial.println("PINGING BASE");
     sendTo(0);
     radio.write(&startFlag, payloadSize);
-    radio.startListening();  
-    startTime = millis();
+    radio.startListening();    
     
-  } 
-  
-  while(radio.available()){
-    radio.read(&data, payloadSize);
-    for(int i = 0; i < payloadSize; i++){
-      Serial.print(data[i]);
-      Serial.print("\t");
-    }
-    Serial.println("");
+    f0 = false;
+    f1 = false;
+    f2 = true;
+    
   }
+  
+  if(f2){
+    Serial.println("RECEIVING DATA:");
+    while(radio.available()){
+      radio.read(&data, payloadSize);
+      for(int i = 0; i < payloadSize; i++){
+        Serial.print(data[i]);
+        Serial.print("\t");
+      }
+      Serial.println("");
+      queueAdd(pointerToPayload);
+    } 
+    
+    // check if terminating character
+    if(data[0] == 255){
+      f2 = false;
+      f3 = true;
+    }
+  
+  }
+  
+  if(f3){
+   
+    Serial.println("TRANSMIT TO NODES:");
+    f3 = false;
+    transmitDataToNodes();
+    
+   
+   
+  }
+  
   
 } // end loop
 

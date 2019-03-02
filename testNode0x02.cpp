@@ -36,7 +36,7 @@ uint8_t thresh2_array[2];
 uint8_t * t1_p = thresh1_array;
 uint8_t * t2_p = thresh2_array;
 
-uint8_t nodeId = 0x01;
+uint8_t nodeId = 0x02;
 
 unsigned long startTime, stopTime, counter, rxTimer=0;
 
@@ -71,7 +71,7 @@ void setup(){
   radio.setAutoAck(1);                     // Ensure autoACK is enabled
   radio.setRetries(2,15);                  // Optionally, increase the delay between retries & # of retries
   radio.setCRCLength(RF24_CRC_8);          // Use 8-bit CRC for performance
-  radio.openReadingPipe(1,rxAddressList[1]);
+  radio.openReadingPipe(1,rxAddressList[2]);
   
   intToBytes(t1_p, thresh1);
   intToBytes(t2_p, thresh2);
@@ -79,7 +79,7 @@ void setup(){
   if(1==1){ // Put all data into packets
     
     // Node 0, Output 0, Sensor 0
-    o0_s0_data[0] = 0x01;	 					// node
+    o0_s0_data[0] = 0x02;	 					// node
     o0_s0_data[1] = 0;						// output
     o0_s0_data[2] = 0;						// sens_id
     o0_s0_data[3] = thresh1_array[0];		// s1L_MSB
@@ -88,7 +88,7 @@ void setup(){
     o0_s0_data[6] = thresh2_array[1];		// s1H_LSB
         
     // Node 0, Output 0, Sensor 1
-    o0_s1_data[0] = 0x01;	 					// node
+    o0_s1_data[0] = 0x02;	 					// node
     o0_s1_data[1] = 0;						// output
     o0_s1_data[2] = 1;						// sens_id
     o0_s1_data[3] = 0;						// s1L_MSB
@@ -97,7 +97,7 @@ void setup(){
     o0_s1_data[6] = thresh1_array[1];		// s1H_LSB
         
     // Node 0, Output 1, Sensor 0
-    o1_s0_data[0] = 0x01;	 					// node
+    o1_s0_data[0] = 0x02;	 					// node
     o1_s0_data[1] = 1;						// output
     o1_s0_data[2] = 0;						// sens_id
     o1_s0_data[3] = 0;						// s1L_MSB
@@ -106,7 +106,7 @@ void setup(){
     o1_s0_data[6] = thresh1_array[1];		// s1H_LSB  
         
     // Node 0, Output 1, Sensor 1
-    o1_s1_data[0] = 0x01;	 					// node
+    o1_s1_data[0] = 0x02;	 					// node
     o1_s1_data[1] = 1;						// output
     o1_s1_data[2] = 1;						// sens_id
     o1_s1_data[3] = thresh1_array[0];		// s1L_MSB
@@ -143,7 +143,7 @@ int main(){
 
   printf("Initiating Basic Data Transfer\n\r");
   radio.stopListening();
-  radio.openWritingPipe(txAddressList[1]);
+  radio.openWritingPipe(txAddressList[2]);
   
   // Infinite Loop:
   while (1){

@@ -48,7 +48,7 @@ void intToBytes (uint8_t * bytesAddress, uint16_t num){
 		if(num >= 0 && num <= 255){
 			byteArray[0] = 0x00;
 			byteArray[1] = (uint8_t) num;		
-		} else if(num > 255 && num <=1023){
+		} else if(num > 255 && num <=65535){
 			byteArray[0] = (num >> 8);
 			byteArray[1] = num & 0x00FF;
 		}	

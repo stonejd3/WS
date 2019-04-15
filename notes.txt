@@ -1,3 +1,42 @@
+  Added methods in patrickNode1:
+                          printData()
+                          printGatheredData()
+                          readIncomingData()
+                          writeToOutputs()
+  
+  Issue with intToBytes truncating data beyond 1023
+    * Changed in some places
+    * Some test codes may not have been changed
+  
+  Delay statements within gatherData should work
+    * Issues might arise if the REPEATER sends data when gathering data
+    * Need to get a concrete time on how long it will take to read the sensor data
+    * Could look into some additional checking on the REPEATER side to make sure that the message actually went through
+      Might have to swap roles and listen for ack response.  If no response then tx again
+    * Minimalistic pingpair_ack files are created for 
+      Arduino -- test further on RPi
+
+  Base.cpp &  Repeater.cpp used for testing
+    * Use backup copy available locally
+    * Make sure data file is up to date with
+      the correct payload information -- see 
+      the downstream backup files.
+    * May be an issue with the pipe not being addressed
+      correctly with these examples since the original
+      minimized source files work consistently
+
+  Limited delay within gatheredData to the slowest sensor
+  refresh time (2 seconds).  Might be possible to take readings every 
+  minute and then probability that transmission fails is 
+  2s/60s = 1/30 = 3% chance of error
+  
+  Check out crontab for scheduling tasks -- 
+  
+  
+
+
+
+
   ----------------------------------------
   Test 4-byte payload:
   Byte 1	Byte 2	Byte3-4	Byte5-6
@@ -44,6 +83,17 @@
   6)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
   7)[pin][sens1_low][sens1_high],[sens2_low][sens2_high]
   ----------------------------------------
+  
+    dataDownstream.txt
+  1,0,0,600,1023
+  1,0,1,0,600
+  1,1,0,0,600
+  1,1,1,600,1023
+  2,0,0,600,1023
+  2,0,1,0,600
+  2,1,0,0,600
+  2,1,1,600,1023
+  
   
   Pseudocode (NODE.ino)
   void loop:{
@@ -142,15 +192,7 @@
   }
   
   ---------------------------
-  dataDownstream.txt
-  1,0,0,600,1023
-  1,0,1,0,600
-  1,1,0,0,600
-  1,1,1,600,1023
-  2,0,0,600,1023
-  2,0,1,0,600
-  2,1,0,0,600
-  2,1,1,600,1023
+
 
   
   

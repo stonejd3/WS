@@ -18,6 +18,6 @@ endif
 include ../Makefile.inc
 
 # define all programs
-PROGRAMS = BASE transfer pingpair_dyn
+PROGRAMS = BASE_backup
 
 include Makefile.examples

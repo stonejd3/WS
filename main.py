@@ -1,68 +1,30 @@
 import requests
+import time
 
-def downstreamIsReady(): # Checks to see if downstream data flow is necessary
-	
-	# Capture the web page:
+def dataAvailable(): # Checks to see if downstream data flow is necessary
 	hashPage = requests.get("http://www.jacobdstone.net/ws/hash.php")
-	
-	# Capture the hash from the page:
 	webHash = hashPage.text
-	
-	#
-	#print webHash
-	#
-	
-	# Point to the local file:
 	localHashFileName = "hash.txt"
-	
-	# Create file object:
 	localHashFile = open(localHashFileName,"r")
-	
-	# Capture the hash from the file
 	localHash = localHashFile.readline()
-	
-	#
-	#print localHash
-	#
-	
-	# Compare the two hashes
-	if(webHash.strip() != localHash.strip()):
-	
-		# Open local file for writing
-		localHashFile = open(localHashFileName,"w")
-	
-		# Write the new hash into the file
-		localHashFile.write(webHash)
-	
-		# Throw a flags
-		return True
 
+	if(webHash.strip() != localHash.strip()):
+		localHashFile = open(localHashFileName,"w")
+		localHashFile.write(webHash)
+		return True
 	localHashFile.close()
 	return False
-	
-	#
-	# END downstreamIsReady()
-	#
 
-# Pushes data down to lower level chips
-def pushDownstream():
-	
-	x = 1
-	
-	#
-	# END pushDownstream()
-	#
+def getDataFromServer():	
+	payloadPage = requests.get("http://www.jacobdstone.net/ws/payloads_dyn.php")
+	text = payloadPage.text
+	dataFileName = "downstreamData.txt"
+	dataFile = open(dataFileName, "w")
+	dataFile.write(text[:-1])
+	dataFile.close()
 
-
-# Receives data from lower level chips -- sends to database
-def pushUpstream():
-	
-	x = 1
-	
-	#
-	# END pushUpstream();
-	#
-
-print downstreamIsReady()
-pushUpstream()
-pushDownstream()
+while(True):
+	flag = dataAvailable()
+	if(flag):
+		getDataFromServer()
+	time.sleep(3)
